@@ -1,13 +1,12 @@
+import { AppConfigOptions } from '@config';
+import { TransformInterceptor } from '@interceptors';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as compression from 'compression';
 
-
 import { AppModule } from './app';
-import { TransformInterceptor } from '@interceptors';
-import { AppConfigOptions } from '@config';
 
 const logger = new Logger('Main');
 
@@ -23,7 +22,6 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableVersioning({ defaultVersion: '1', type: VersioningType.URI });
   app.useGlobalInterceptors(new TransformInterceptor());
-
 
   const options = new DocumentBuilder()
     .setTitle('Fity')

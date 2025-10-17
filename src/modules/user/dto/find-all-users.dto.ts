@@ -8,5 +8,3 @@ export class FindAllUsersDto extends OmitType(BaseFindDto, ['isActive']) {
   @IsOptional()
   search?: string;
 }
-
-
