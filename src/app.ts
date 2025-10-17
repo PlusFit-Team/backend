@@ -3,23 +3,35 @@ import {
   appConfig,
   databaseConfig,
   firebaseConfig,
+  gemeniConfig,
   jwtConfig,
   r2Config,
   redisConfig,
 } from '@config';
 import { AuthGuard, RolesGuard } from '@guards';
 import KeyvRedis from '@keyv/redis';
+import { AuthModule, FirebaseModule, SharedModule, UserModule } from '@modules';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Keyv } from 'keyv';
+import { FileModule } from 'modules/file';
+import { NutritionModule } from 'modules/nutrition';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load: [appConfig, databaseConfig, firebaseConfig, jwtConfig, r2Config, redisConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        firebaseConfig,
+        jwtConfig,
+        r2Config,
+        redisConfig,
+        gemeniConfig,
+      ],
       isGlobal: true,
     }),
     CacheModule.registerAsync({
@@ -40,6 +52,12 @@ import { Keyv } from 'keyv';
       },
     }),
     JwtModule.register({ global: true }),
+    FileModule,
+    FirebaseModule,
+    UserModule,
+    SharedModule,
+    AuthModule,
+    NutritionModule,
   ],
   controllers: [],
   providers: [

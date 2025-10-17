@@ -103,6 +103,10 @@ model User {
   deletedAt DateTime? @map("deleted_at") @db.Timestamp
 
   nutritionTarget NutritionTarget?
+
+  weightLogs      WeightLog[]
+  foodNutritions  FoodNutrition[]
+  dailyNutritions DailyNutritionLog[]
   goalBlocker     UserGoalBlocker[]
   fitnesGoal      UserFitnesGoal[]
 
@@ -138,6 +142,20 @@ model UserFitnesGoal {
   @@map("user_fitnes_goals")
 }
 
+model WeightLog {
+  id     String @default(dbgenerated("GEN_RANDOM_UUID()")) @map("id") @db.Uuid
+  weight Float  @map("weight")
+  userId String @map("user_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([id])
+  @@index([userId])
+  @@map("weight_logs")
+}
+
 model NutritionTarget {
   id       String @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
   calories Int    @map("calories")
@@ -157,5 +175,73 @@ model NutritionTarget {
   @@map("nutrition_target")
 }
 
+model FoodNutrition {
+  id       String        @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  mealName String?       @map("meal_name")
+  calories Float         @default(0) @map("calories")
+  carbs    Float         @default(0) @map("carbs")
+  protein  Float         @default(0) @map("protein")
+  fat      Float         @default(0) @map("fat")
+  fiber    Float?        @default(0) @map("fiber")
+  sugar    Float?        @default(0) @map("sugar")
+  sodium   Float?        @default(0) @map("sodium")
+  image    String?       @map("image")
+  type     FoodEntryType @map("type")
+  userId   String        @map("user_id") @db.Uuid
 
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp
 
+  user User @relation(fields: [userId], references: [id])
+
+  ingredients FoodIngredient[]
+
+  @@id([id])
+  @@index([userId])
+  @@map("food_nutrition")
+}
+
+model FoodIngredient {
+  id           String  @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  name         String  @map("name")
+  portion      String? @map("portion")
+  portionGrams Float?  @map("portion_grams")
+  calories     Float   @default(0) @map("calories")
+  carbs        Float   @default(0) @map("carbs")
+  protein      Float   @default(0) @map("protein")
+  fat          Float   @default(0) @map("fat")
+  fiber        Float?  @default(0) @map("fiber")
+  sugar        Float?  @default(0) @map("sugar")
+  sodium       Float?  @default(0) @map("sodium")
+  mealId       String  @map("meal_id") @db.Uuid
+
+  meal FoodNutrition @relation(fields: [mealId], references: [id])
+
+  @@id([id])
+  @@map("food_ingredient")
+}
+
+model DailyNutritionLog {
+  id       String   @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  calories Int      @default(0) @map("calories")
+  carbs    Int      @default(0) @map("carbs")
+  protein  Int      @default(0) @map("protein")
+  fat      Int      @default(0) @map("fat")
+  fiber    Int      @default(0) @map("fiber")
+  sugar    Int      @default(0) @map("sugar")
+  sodium   Int      @default(0) @map("soduim")
+  link     String?  @map("link")
+  date     DateTime @map("date")
+  userId   String   @map("user_id") @db.Uuid
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([id])
+  @@unique([date, userId])
+  @@map("daily_nutrition_log")
+}

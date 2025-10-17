@@ -4,3 +4,4 @@ export * from './jwt.config';
 export * from './r2.config';
 export * from './firebase.config';
 export * from './redis.config';
+export * from './gemeni.config';
