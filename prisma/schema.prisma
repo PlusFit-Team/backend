@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleTypes {
+  USER
+  ADMIN
+
+  @@map("role_types")
+}
+
+enum AuthProvider {
+  GOOGLE
+  APPLE
+  EMAIL
+  PHONE
+
+  @@map("auth_provider")
+}
+
+enum TrainingFrequency {
+  ZERO_TO_TWO
+  THREE_TO_FIVE
+  SIX_PLUS
+
+  @@map("training_frequency")
+}
+
+enum Goal {
+  GAIN
+  MAINTAIN
+  LOSE
+
+  @@map("goal")
+}
+
+enum GoalBlocker {
+  CONSISTENCY
+  EATING_HABITS
+  SUPPORT
+  SCHEDULE
+
+  @@map("goal_bocker")
+}
+
+enum MealFrequency {
+  TWO_TIMES
+  THREE_TIMES
+  FOUR_TIMES
+  FIVE_OR_MORE
+
+  @@map("meal_frequency")
+}
+
+enum FitnesGoal {
+  EAT_AND_LIVE_HEALTHIER
+  BOOST_ENERGY_AND_MOOD
+  STAY_MOTIVATED_AND_CONSISTENT
+  FEEL_BETTER_ABOUT_BODY
+
+  @@map("fitnes_goal")
+}
+
+enum FoodEntryType {
+  IMAGE
+  BARCODE
+  AUDIO
+  TEXT
+
+  @@map("food_entry_type")
+}
+
+model User {
+  id                String             @default(dbgenerated("GEN_RANDOM_UUID()")) @map("id") @db.Uuid
+  fullname          String?            @map("fullname") @db.VarChar(100)
+  password          String?            @map("password")
+  phone             String?            @map("phone")
+  email             String?            @map("email")
+  firebaseId        String?            @map("firebase_user_id")
+  appleId           String?            @map("apple_user_id")
+  photoUrl          String?            @map("email_photo_url")
+  language          String?            @map("language")
+  isOnboarded       Boolean            @default(false) @map("is_onboarded")
+  provider          AuthProvider?      @map("provider")
+  gender            String?            @map("gender")
+  source            String?            @map("source")
+  role              RoleTypes          @default(USER) @map("role")
+  height            Int?               @map("height")
+  weight            Float?             @map("weight")
+  birthday          DateTime?          @map("birthday")
+  goal              Goal?              @map("goal")
+  targetWeight      Float?             @map("target_weight")
+  mealFrequency     MealFrequency?     @map("meal_frequency")
+  trainingFrequency TrainingFrequency? @map("training_frequency")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp
+
+  nutritionTarget NutritionTarget?
+  goalBlocker     UserGoalBlocker[]
+  fitnesGoal      UserFitnesGoal[]
+
+  @@id([id])
+  @@unique([firebaseId])
+  @@unique([appleId])
+  @@index([email])
+  @@index([phone])
+  @@index([firebaseId])
+  @@index([appleId])
+  @@map("users")
+}
+
+model UserGoalBlocker {
+  id      String      @default(dbgenerated("GEN_RANDOM_UUID()")) @map("id") @db.Uuid
+  userId  String      @map("user_id") @db.Uuid
+  blocker GoalBlocker @map("blocker")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, blocker])
+  @@map("user_goal_blockers")
+}
+
+model UserFitnesGoal {
+  id     String     @default(dbgenerated("GEN_RANDOM_UUID()")) @map("id") @db.Uuid
+  userId String     @map("user_id") @db.Uuid
+  goal   FitnesGoal @map("goal")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, goal])
+  @@map("user_fitnes_goals")
+}
+
+model NutritionTarget {
+  id       String @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  calories Int    @map("calories")
+  carbs    Int    @map("carbs")
+  protein  Int    @map("protein")
+  fat      Int    @map("fat")
+  userId   String @unique @map("user_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp
+
+  @@id([id])
+  @@index([userId])
+  @@map("nutrition_target")
+}
+
+
+
