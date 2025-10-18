@@ -141,7 +141,7 @@ export class NutritionService {
             },
           },
           orderBy: {
-            createdAt: 'asc',
+            createdAt: 'desc',
           },
         }),
         this.prisma.foodNutrition.findMany({
@@ -182,7 +182,7 @@ export class NutritionService {
             },
           },
           orderBy: {
-            createdAt: 'asc',
+            createdAt: 'desc',
           },
         }),
       ]);
@@ -419,11 +419,11 @@ export class NutritionService {
     const data = await this.analyzeImageWithPrompt(link, prompt, user.id);
     const imageUrl = data.total?.imageUrl ?? '';
 
-    await Promise.all([
+    const [nutration] = await Promise.all([
       this.createFoodNutritionFromAI(data, user.id, imageUrl),
       this.recordDailyNutritionFromAI(data, user.id, link),
     ]);
 
-    return data;
+    return { id: nutration.id, ...data };
   }
 }

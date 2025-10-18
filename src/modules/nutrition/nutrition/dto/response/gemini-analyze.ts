@@ -69,22 +69,25 @@ class TotalNutritionDto {
 class HealthAnalysisDto {
   @ApiProperty({
     enum: ['NORMAL', 'WARNING', 'CAUTION'],
-    description: 'Health status based on user conditions'
+    description: 'Health status based on user conditions',
   })
   status: 'NORMAL' | 'WARNING' | 'CAUTION';
 
   @ApiProperty({
-    description: 'Short warning or status message (1-2 sentences)'
+    description: 'Short warning or status message (1-2 sentences)',
   })
   alert: string;
 
   @ApiProperty({
-    description: 'Detailed explanation with recommendations'
+    description: 'Detailed explanation with recommendations',
   })
   details: string;
 }
 
 export class GeminiAnalyzeFoodResponseDto {
+  @ApiProperty()
+  id: string;
+
   @ApiProperty({ type: [IngredientDto] })
   ingredients: IngredientDto[];
 
@@ -94,7 +97,7 @@ export class GeminiAnalyzeFoodResponseDto {
   @ApiProperty({
     type: HealthAnalysisDto,
     description: 'Health analysis based on user health conditions',
-    required: false
+    required: false,
   })
   healthAnalysis?: HealthAnalysisDto;
 }

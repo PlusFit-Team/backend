@@ -56,6 +56,7 @@ export class AiChatService {
       where: { userId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       select: {
+        id: true,
         mealName: true,
         calories: true,
         carbs: true,
@@ -64,6 +65,9 @@ export class AiChatService {
         fiber: true,
         sugar: true,
         sodium: true,
+        healthStatus: true,
+        healthAlert: true,
+        healthDetails: true,
         ingredients: {
           select: {
             name: true,
@@ -83,13 +87,24 @@ export class AiChatService {
 
     if (!food) return '';
 
-    let contextInfo = '\n\nUSER CURRENT MEAL INFORMATION:\n';
+    let contextInfo = '\n\nUSER LATEST FOOD NUTRITION:\n';
+    contextInfo += `Food Nutrition ID: ${food.id}\n`;
     contextInfo += `Meal Name: ${food.mealName || 'Unknown'}\n`;
     contextInfo += `Total Calories: ${food.calories} kcal\n`;
     contextInfo += `Carbs: ${food.carbs}g, Protein: ${food.protein}g, Fat: ${food.fat}g\n`;
     if (food.fiber) contextInfo += `Fiber: ${food.fiber}g\n`;
     if (food.sugar) contextInfo += `Sugar: ${food.sugar}g\n`;
     if (food.sodium) contextInfo += `Sodium: ${food.sodium}mg\n`;
+
+    if (food.healthStatus) {
+      contextInfo += `\nHealth Status: ${food.healthStatus}\n`;
+    }
+    if (food.healthAlert) {
+      contextInfo += `Health Alert: ${food.healthAlert}\n`;
+    }
+    if (food.healthDetails) {
+      contextInfo += `Health Details: ${food.healthDetails}\n`;
+    }
 
     if (food.ingredients && food.ingredients.length > 0) {
       contextInfo += '\nIngredients:\n';
@@ -133,7 +148,7 @@ export class AiChatService {
       999,
     );
 
-    const [healthConditions, recentFoods] = await Promise.all([
+    const [healthConditions, todayFoods, dailyNutrition] = await Promise.all([
       this.prisma.userHealthCondition.findMany({
         where: {
           userId,
@@ -164,15 +179,32 @@ export class AiChatService {
           sodium: true,
           createdAt: true,
         },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.dailyNutritionLog.findUnique({
+        where: {
+          date_userId: {
+            userId,
+            date: todayStart,
+          },
+        },
+        select: {
+          calories: true,
+          carbs: true,
+          protein: true,
+          fat: true,
+          fiber: true,
+          sugar: true,
+          sodium: true,
+        },
       }),
     ]);
 
     let contextInfo = '';
 
+    // Always include health conditions section
+    contextInfo += '\n\nUSER HEALTH CONDITIONS:\n';
     if (healthConditions.length > 0) {
-      contextInfo += '\n\nUSER HEALTH CONDITIONS:\n';
       healthConditions.forEach((condition) => {
         contextInfo += `- ${condition.name}`;
         if (condition.description) {
@@ -180,12 +212,33 @@ export class AiChatService {
         }
         contextInfo += '\n';
       });
+    } else {
+      contextInfo += 'No specific health conditions reported.\n';
     }
 
-    if (recentFoods.length > 0) {
-      contextInfo += "\n\nUSER'S RECENT FOOD INTAKE (Today):\n";
-      recentFoods.forEach((food) => {
-        contextInfo += `- ${food.mealName}: `;
+    // Always include daily nutrition summary
+    contextInfo += "\n\nTODAY'S TOTAL NUTRITION INTAKE:\n";
+    if (dailyNutrition) {
+      contextInfo += `- Total Calories: ${dailyNutrition.calories} kcal\n`;
+      contextInfo += `- Carbs: ${dailyNutrition.carbs}g\n`;
+      contextInfo += `- Protein: ${dailyNutrition.protein}g\n`;
+      contextInfo += `- Fat: ${dailyNutrition.fat}g\n`;
+      if (dailyNutrition.fiber) contextInfo += `- Fiber: ${dailyNutrition.fiber}g\n`;
+      if (dailyNutrition.sugar) contextInfo += `- Sugar: ${dailyNutrition.sugar}g\n`;
+      if (dailyNutrition.sodium) contextInfo += `- Sodium: ${dailyNutrition.sodium}mg\n`;
+    } else {
+      contextInfo += 'No food consumed yet today.\n';
+    }
+
+    // Always include today's food log
+    contextInfo += "\n\nTODAY'S FOOD LOG (All Meals):\n";
+    if (todayFoods.length > 0) {
+      todayFoods.forEach((food, index) => {
+        const time = new Date(food.createdAt).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        contextInfo += `${index + 1}. [${time}] ${food.mealName}: `;
         contextInfo += `${food.calories} kcal, `;
         contextInfo += `${food.carbs}g carbs, `;
         contextInfo += `${food.protein}g protein, `;
@@ -194,6 +247,8 @@ export class AiChatService {
         if (food.sodium) contextInfo += `, ${food.sodium}mg sodium`;
         contextInfo += '\n';
       });
+    } else {
+      contextInfo += 'No meals logged yet today.\n';
     }
 
     return contextInfo;
