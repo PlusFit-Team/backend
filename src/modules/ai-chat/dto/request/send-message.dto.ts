@@ -11,4 +11,9 @@ export class SendMessageDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  foodNutritionId?: string;
 }

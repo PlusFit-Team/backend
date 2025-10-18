@@ -51,10 +51,12 @@ export class AiChatService {
     });
   }
 
-  private async getLatestFoodNutritionContext(userId: string) {
+  private async getFoodNutritionContextById(
+    foodNutritionId: string,
+    userId: string,
+  ) {
     const food = await this.prisma.foodNutrition.findFirst({
-      where: { userId, deletedAt: null },
-      orderBy: { createdAt: 'desc' },
+      where: { id: foodNutritionId, userId, deletedAt: null },
       select: {
         id: true,
         mealName: true,
@@ -68,6 +70,7 @@ export class AiChatService {
         healthStatus: true,
         healthAlert: true,
         healthDetails: true,
+        createdAt: true,
         ingredients: {
           select: {
             name: true,
@@ -87,8 +90,15 @@ export class AiChatService {
 
     if (!food) return '';
 
-    let contextInfo = '\n\nUSER LATEST FOOD NUTRITION:\n';
+    const time = new Date(food.createdAt).toLocaleString('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
+    let contextInfo =
+      '\n\nSELECTED FOOD NUTRITION (User wants to discuss this meal):\n';
     contextInfo += `Food Nutrition ID: ${food.id}\n`;
+    contextInfo += `Consumed at: ${time}\n`;
     contextInfo += `Meal Name: ${food.mealName || 'Unknown'}\n`;
     contextInfo += `Total Calories: ${food.calories} kcal\n`;
     contextInfo += `Carbs: ${food.carbs}g, Protein: ${food.protein}g, Fat: ${food.fat}g\n`;
@@ -138,17 +148,8 @@ export class AiChatService {
       0,
       0,
     );
-    const todayEnd = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
 
-    const [healthConditions, todayFoods, dailyNutrition] = await Promise.all([
+    const [healthConditions, dailyNutrition] = await Promise.all([
       this.prisma.userHealthCondition.findMany({
         where: {
           userId,
@@ -156,30 +157,7 @@ export class AiChatService {
         },
         select: {
           name: true,
-          description: true,
         },
-      }),
-      this.prisma.foodNutrition.findMany({
-        where: {
-          userId,
-          createdAt: {
-            gte: todayStart,
-            lt: todayEnd,
-          },
-          deletedAt: null,
-        },
-        select: {
-          mealName: true,
-          calories: true,
-          carbs: true,
-          protein: true,
-          fat: true,
-          fiber: true,
-          sugar: true,
-          sodium: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'asc' },
       }),
       this.prisma.dailyNutritionLog.findUnique({
         where: {
@@ -193,62 +171,30 @@ export class AiChatService {
           carbs: true,
           protein: true,
           fat: true,
-          fiber: true,
-          sugar: true,
-          sodium: true,
         },
       }),
     ]);
 
     let contextInfo = '';
 
-    // Always include health conditions section
+    // Health conditions - only names
     contextInfo += '\n\nUSER HEALTH CONDITIONS:\n';
     if (healthConditions.length > 0) {
-      healthConditions.forEach((condition) => {
-        contextInfo += `- ${condition.name}`;
-        if (condition.description) {
-          contextInfo += `: ${condition.description}`;
-        }
-        contextInfo += '\n';
-      });
+      const conditionNames = healthConditions.map((c) => c.name).join(', ');
+      contextInfo += `${conditionNames}\n`;
     } else {
-      contextInfo += 'No specific health conditions reported.\n';
+      contextInfo += 'None\n';
     }
 
-    // Always include daily nutrition summary
-    contextInfo += "\n\nTODAY'S TOTAL NUTRITION INTAKE:\n";
+    // Today's total nutrition - only main macros
+    contextInfo += "\n\nTODAY'S TOTAL NUTRITION:\n";
     if (dailyNutrition) {
-      contextInfo += `- Total Calories: ${dailyNutrition.calories} kcal\n`;
-      contextInfo += `- Carbs: ${dailyNutrition.carbs}g\n`;
-      contextInfo += `- Protein: ${dailyNutrition.protein}g\n`;
-      contextInfo += `- Fat: ${dailyNutrition.fat}g\n`;
-      if (dailyNutrition.fiber) contextInfo += `- Fiber: ${dailyNutrition.fiber}g\n`;
-      if (dailyNutrition.sugar) contextInfo += `- Sugar: ${dailyNutrition.sugar}g\n`;
-      if (dailyNutrition.sodium) contextInfo += `- Sodium: ${dailyNutrition.sodium}mg\n`;
+      contextInfo += `Calories: ${dailyNutrition.calories} kcal | `;
+      contextInfo += `Carbs: ${dailyNutrition.carbs}g | `;
+      contextInfo += `Protein: ${dailyNutrition.protein}g | `;
+      contextInfo += `Fat: ${dailyNutrition.fat}g\n`;
     } else {
-      contextInfo += 'No food consumed yet today.\n';
-    }
-
-    // Always include today's food log
-    contextInfo += "\n\nTODAY'S FOOD LOG (All Meals):\n";
-    if (todayFoods.length > 0) {
-      todayFoods.forEach((food, index) => {
-        const time = new Date(food.createdAt).toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        contextInfo += `${index + 1}. [${time}] ${food.mealName}: `;
-        contextInfo += `${food.calories} kcal, `;
-        contextInfo += `${food.carbs}g carbs, `;
-        contextInfo += `${food.protein}g protein, `;
-        contextInfo += `${food.fat}g fat`;
-        if (food.sugar) contextInfo += `, ${food.sugar}g sugar`;
-        if (food.sodium) contextInfo += `, ${food.sodium}mg sodium`;
-        contextInfo += '\n';
-      });
-    } else {
-      contextInfo += 'No meals logged yet today.\n';
+      contextInfo += 'No food logged yet today.\n';
     }
 
     return contextInfo;
@@ -262,7 +208,15 @@ export class AiChatService {
     const chat = await this.getOrCreateChat(dto.chatId, user.id);
 
     const healthContext = await this.getUserHealthContext(user.id);
-    const foodContext = await this.getLatestFoodNutritionContext(user.id);
+
+    // Only add specific food context if foodNutritionId is provided
+    let foodContext = '';
+    if (dto.foodNutritionId) {
+      foodContext = await this.getFoodNutritionContextById(
+        dto.foodNutritionId,
+        user.id,
+      );
+    }
 
     const history = (chat.history as unknown as ChatMessage[]) || [];
 
