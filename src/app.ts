@@ -10,15 +10,13 @@ import {
 } from '@config';
 import { AuthGuard, RolesGuard } from '@guards';
 import KeyvRedis from '@keyv/redis';
-import { AuthModule, FirebaseModule, SharedModule, UserModule } from '@modules';
+import { AuthModule, FileModule, FirebaseModule, HealthConditionModule, NutritionModule, SharedModule, UserModule } from '@modules';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Keyv } from 'keyv';
-import { FileModule } from 'modules/file';
-import { NutritionModule } from 'modules/nutrition';
 
 @Module({
   imports: [
@@ -58,6 +56,7 @@ import { NutritionModule } from 'modules/nutrition';
     SharedModule,
     AuthModule,
     NutritionModule,
+    HealthConditionModule,
   ],
   controllers: [],
   providers: [
