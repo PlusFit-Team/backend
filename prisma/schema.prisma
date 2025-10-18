@@ -195,18 +195,23 @@ model NutritionTarget {
 }
 
 model FoodNutrition {
-  id       String        @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
-  mealName String?       @map("meal_name")
-  calories Float         @default(0) @map("calories")
-  carbs    Float         @default(0) @map("carbs")
-  protein  Float         @default(0) @map("protein")
-  fat      Float         @default(0) @map("fat")
-  fiber    Float?        @default(0) @map("fiber")
-  sugar    Float?        @default(0) @map("sugar")
-  sodium   Float?        @default(0) @map("sodium")
-  image    String?       @map("image")
-  type     FoodEntryType @map("type")
-  userId   String        @map("user_id") @db.Uuid
+  id           String         @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  mealName     String?        @map("meal_name")
+  calories     Float          @default(0) @map("calories")
+  carbs        Float          @default(0) @map("carbs")
+  protein      Float          @default(0) @map("protein")
+  fat          Float          @default(0) @map("fat")
+  fiber        Float?         @default(0) @map("fiber")
+  sugar        Float?         @default(0) @map("sugar")
+  sodium       Float?         @default(0) @map("sodium")
+  image        String?        @map("image")
+  type         FoodEntryType  @map("type")
+  userId       String         @map("user_id") @db.Uuid
+
+  // Health Analysis fields
+  healthStatus String?        @map("health_status") @db.VarChar(20) // NORMAL, WARNING, CAUTION
+  healthAlert  String?        @map("health_alert") @db.Text
+  healthDetails String?       @map("health_details") @db.Text
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp

@@ -25,8 +25,15 @@ export interface NutritionTotal {
   imageUrl: string;
 }
 
+export interface HealthAnalysis {
+  status: 'NORMAL' | 'WARNING' | 'CAUTION';
+  alert: string; // Birinchi ustun: Ogohlantirish yoki asosiy xabar
+  details: string; // Ikkinchi ustun: Nega yaxshi/yomon, tafsilotlar va tavsiyalar
+}
+
 export interface NutritionResult {
   ingredients: NutritionIngredient[];
   total: NutritionTotal;
+  healthAnalysis?: HealthAnalysis;
   message?: string;
 }

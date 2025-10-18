@@ -122,6 +122,9 @@ export class NutritionService {
             image: true,
             mealName: true,
             createdAt: true,
+            healthStatus: true,
+            healthAlert: true,
+            healthDetails: true,
             ingredients: {
               select: {
                 name: true,
@@ -160,6 +163,9 @@ export class NutritionService {
             image: true,
             mealName: true,
             createdAt: true,
+            healthStatus: true,
+            healthAlert: true,
+            healthDetails: true,
             ingredients: {
               select: {
                 name: true,
@@ -217,6 +223,7 @@ export class NutritionService {
   async analyzeImageWithPrompt(
     link: string,
     prompt: string,
+    userId?: string,
   ): Promise<NutritionResult> {
     const publicUrl = this.configService.get<string>('r2.publicUrl');
     if (!publicUrl) throw new Error('r2.publicUrl not configured');
@@ -225,7 +232,69 @@ export class NutritionService {
 
     const { base64, mimeType } = await this.fetchImageAsBase64(url);
 
-    const finalPrompt = `${prompt}\nReturn ONLY valid JSON.`;
+    let finalPrompt = prompt;
+
+    if (userId) {
+      const now = new Date();
+      const todayStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+        0,
+      );
+
+      const todayNutrition = await this.prisma.dailyNutritionLog.findUnique({
+        where: {
+          date_userId: {
+            userId,
+            date: todayStart,
+          },
+        },
+        select: {
+          calories: true,
+          carbs: true,
+          fat: true,
+          protein: true,
+          fiber: true,
+          sugar: true,
+          sodium: true,
+        },
+      });
+
+      finalPrompt += "\n\nUser's Daily Intake So Far (Today):\n";
+      if (todayNutrition) {
+        finalPrompt += `- Calories: ${todayNutrition.calories} kcal\n`;
+        finalPrompt += `- Protein: ${todayNutrition.protein} g\n`;
+        finalPrompt += `- Carbs: ${todayNutrition.carbs} g\n`;
+        finalPrompt += `- Fat: ${todayNutrition.fat} g\n`;
+        finalPrompt += `- Fiber: ${todayNutrition.fiber} g\n`;
+        finalPrompt += `- Sugar: ${todayNutrition.sugar} g\n`;
+        finalPrompt += `- Sodium: ${todayNutrition.sodium} mg\n`;
+      } else {
+        finalPrompt += 'No food consumed yet today.\n';
+      }
+
+      const healthConditions = await this.prisma.userHealthCondition.findMany({
+        where: { userId, deletedAt: null },
+        select: { name: true, description: true },
+      });
+
+      if (healthConditions.length > 0) {
+        finalPrompt += '\n\nUser Health Conditions:\n';
+        healthConditions.forEach((c) => {
+          finalPrompt += `- ${c.name}`;
+          if (c.description) finalPrompt += `: ${c.description}`;
+          finalPrompt += '\n';
+        });
+      } else {
+        finalPrompt += '\n\nUser has no specific health conditions.\n';
+      }
+    }
+
+    finalPrompt += '\nReturn ONLY valid JSON.';
 
     const contents = [
       {
@@ -283,6 +352,9 @@ export class NutritionService {
         image: imageUrl,
         type: FoodEntryType.IMAGE,
         userId,
+        healthStatus: result.healthAnalysis?.status,
+        healthAlert: result.healthAnalysis?.alert,
+        healthDetails: result.healthAnalysis?.details,
         ingredients: {
           create: result.ingredients.map((i) => ({
             name: i.name,
@@ -344,7 +416,7 @@ export class NutritionService {
   }
 
   async processImageNutrition(link: string, user: ICurrentUser) {
-    const data = await this.analyzeImageWithPrompt(link, prompt);
+    const data = await this.analyzeImageWithPrompt(link, prompt, user.id);
     const imageUrl = data.total?.imageUrl ?? '';
 
     await Promise.all([

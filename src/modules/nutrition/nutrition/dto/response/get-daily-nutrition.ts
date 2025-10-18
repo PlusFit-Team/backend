@@ -65,6 +65,15 @@ class RecentlyUploaded {
 
   @ApiProperty({ type: [IngredientDto] })
   ingredients: IngredientDto[];
+
+  @ApiProperty({ required: false, nullable: true })
+  healthStatus?: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  healthAlert?: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  healthDetails?: string;
 }
 
 class Nutrition {

@@ -66,10 +66,35 @@ class TotalNutritionDto {
   imageUrl?: string;
 }
 
+class HealthAnalysisDto {
+  @ApiProperty({
+    enum: ['NORMAL', 'WARNING', 'CAUTION'],
+    description: 'Health status based on user conditions'
+  })
+  status: 'NORMAL' | 'WARNING' | 'CAUTION';
+
+  @ApiProperty({
+    description: 'Short warning or status message (1-2 sentences)'
+  })
+  alert: string;
+
+  @ApiProperty({
+    description: 'Detailed explanation with recommendations'
+  })
+  details: string;
+}
+
 export class GeminiAnalyzeFoodResponseDto {
   @ApiProperty({ type: [IngredientDto] })
   ingredients: IngredientDto[];
 
   @ApiProperty({ type: TotalNutritionDto })
   total: TotalNutritionDto;
+
+  @ApiProperty({
+    type: HealthAnalysisDto,
+    description: 'Health analysis based on user health conditions',
+    required: false
+  })
+  healthAnalysis?: HealthAnalysisDto;
 }
