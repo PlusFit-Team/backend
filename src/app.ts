@@ -10,7 +10,7 @@ import {
 } from '@config';
 import { AuthGuard, RolesGuard } from '@guards';
 import KeyvRedis from '@keyv/redis';
-import { AuthModule, FileModule, FirebaseModule, HealthConditionModule, NutritionModule, SharedModule, UserModule } from '@modules';
+import { AiHealthChatModule, AuthModule, FileModule, FirebaseModule, HealthConditionModule, NutritionModule, SharedModule, UserModule } from '@modules';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -57,6 +57,7 @@ import { Keyv } from 'keyv';
     AuthModule,
     NutritionModule,
     HealthConditionModule,
+    AiHealthChatModule,
   ],
   controllers: [],
   providers: [

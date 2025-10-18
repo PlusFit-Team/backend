@@ -110,6 +110,7 @@ model User {
   goalBlocker      UserGoalBlocker[]
   fitnesGoal       UserFitnesGoal[]
   healthConditions UserHealthCondition[]
+  healthChats      HealthChat[]
 
   @@id([id])
   @@unique([firebaseId])
@@ -262,4 +263,20 @@ model DailyNutritionLog {
   @@id([id])
   @@unique([date, userId])
   @@map("daily_nutrition_log")
+}
+
+model HealthChat {
+  id      String @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  history Json   @default("[]") @map("history")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([id])
+  @@index([userId])
+  @@map("health_chats")
 }
